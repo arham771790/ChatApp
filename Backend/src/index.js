@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import express from "express";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.routes.js";
+import messageRoutes from "./routes/message.routes.js"
 import connectDB from "./utils/db.js";
 dotenv.config();
 const app = express();
@@ -16,4 +17,5 @@ app.listen(PORT, () => {
   connectDB();
 });
 
-app.use("/api/auth",authRoutes);
+app.use("/api/auth",authRoutes);// Use the auth routes for all routes starting with /api/auth containing signup, login, logout, updateProfile and checkAuth routes
+app.use("/api/message",messageRoutes);// Use the message routes for all routes starting with /api/message containing sendMessage and getMessages routes
