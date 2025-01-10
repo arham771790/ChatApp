@@ -8,7 +8,7 @@ import { uploadonCloudinary } from "../utils/cloudinary.js";
 
 // Signup Route: Register a new user
 const signupUser = asyncHandler(async (req, res) => {
-    const { fullName, email, username, password } = req.body;
+    const { fullName, email, username, password ,profilePic} = req.body;
 
     if ([fullName, email, password].some(field => field?.trim() === "")) {
         throw new ApiError(400, "All fields (Full Name, Email, Password) are required");
@@ -34,6 +34,7 @@ const signupUser = asyncHandler(async (req, res) => {
         email,
         password: await bcrypt.hash(password, 10),
         username: username.toLowerCase(),
+        profilePic:profilePic,
     });
 
     const createdUser = await User.findById(user._id).select("-password -refreshToken");
@@ -95,5 +96,32 @@ const logoutUser = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Logout failed");
     }
 });
+const updateProfile=asyncHandler(async(req,res)=>{
+    try{
+        const {profilePic}=req.body;
 
-export { signupUser, loginUser, logoutUser };
+        const userId=req.user._id;
+        if(!profilePic)
+        {
+            throw new ApiError(400,"Profile pic is required");
+        }
+        const uploadResponse=await uploadonCloudinary(profilePic);
+        const updatedUser=await User.findByIdAndUpdate(userId,{profilePic:uploadResponse.secure_url},{new:true});
+        res.status(200).json(new ApiResponse(200,updatedUser,"Profile pic updated successfully"));
+    }catch(error){
+        console.log("Error updating profile pic",error.message);
+        throw new ApiError(500,"Error updating profile pic");
+    }    
+
+});
+   
+const checkAuth=asyncHandler(async(req,res)=>{
+    try{
+        const user=req.user;
+        console.log("User authenticated successfully",user);
+        res.status(200).json(new ApiResponse(200,user,"User authenticated successfully"));
+    }catch(error){
+        throw new ApiError(500,"Error checking authentication");
+    }
+});
+export { signupUser, loginUser, logoutUser ,updateProfile,checkAuth};

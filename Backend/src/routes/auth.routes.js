@@ -1,9 +1,12 @@
 import express from "express";
-import { signupUser,loginUser,logoutUser } from "../controllers/user.controller.js";
-const router = express.Router();// Create a new router
+import { protectRoute } from "../middlewares/auth.middlewares.js";
+import { signupUser,loginUser,logoutUser ,updateProfile,checkAuth} from "../controllers/user.controller.js";
 
-router.post('/signup', signupUser);// Define the signup route
-router.post('/login', loginUser);// Define the login route
-router.post('/logout', logoutUser);// Define the logout route
+const router = express.Router();// Create a new router
+router.post('/signup', signupUser); // Signup route
+router.post('/login', loginUser); // Login route
+router.post('/logout', logoutUser); // Logout route
+router.post('/updateProfile', protectRoute, updateProfile); // Protected updateProfile route
+router.get('/check', protectRoute, checkAuth); // Protected check route
 
 export default router;

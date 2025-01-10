@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import express from "express";
+import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.routes.js";
 import connectDB from "./utils/db.js";
 dotenv.config();
@@ -8,6 +9,7 @@ const PORT=process.env.PORT;
 app.get("/", (req, res) => {
   res.send("Hello World!");
 }); 
+app.use(cookieParser());// Parse Cookie header and populate req.cookies with an object keyed by the cookie names.
 app.use(express.json());// Parse JSON-encoded bodies 
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
