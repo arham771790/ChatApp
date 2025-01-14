@@ -1,112 +1,193 @@
-import { useState } from "react";
-import { MessageSquare, Eye, EyeOff } from "lucide-react";
-import { useAuthStore } from "../store/useAuthStore";
+import { useState } from "react"; // Importing the useState hook to manage local state
+import { useAuthStore } from "../store/useAuthStore"; // Importing custom hook to access authentication-related actions
+import { Eye, EyeOff, Loader2, Lock, Mail, MessageSquare, User } from "lucide-react"; // Importing icons for UI
+import { Link } from "react-router-dom"; // Importing Link component for navigation
+import { useNavigate } from "react-router-dom";
+import AuthImagePattern from "../components/AuthImagePattern"; // Importing a custom component for the image and text pattern on the right side
+import toast from "react-hot-toast"; // Importing a library for showing toast notifications
 
-const SignupPage = () => {
+const SignUpPage = () => {
+  // State to toggle showing/hiding the password
   const [showPassword, setShowPassword] = useState(false);
+
+  // State to manage form input values
   const [formData, setFormData] = useState({
+    fullName: "",
     email: "",
     password: "",
-    name: "",
   });
-  const [errors, setErrors] = useState({}); // State to store validation errors
-
+  const navigate = useNavigate(); // Initialize useNavigate
+  // Extracting the signup function and loading state from the auth store
   const { signup, isSigningUp } = useAuthStore();
 
+  // Function to validate the form inputs
   const validateForm = () => {
-    const newErrors = {};
+    if (!formData.fullName.trim()) return toast.error("Full name is required"); // Check if full name is empty
+    if (!formData.email.trim()) return toast.error("Email is required"); // Check if email is empty
+    if (!/\S+@\S+\.\S+/.test(formData.email)) return toast.error("Invalid email format"); // Check if email is in the correct format
+    if (!formData.password) return toast.error("Password is required"); // Check if password is empty
+    if (formData.password.length < 6) return toast.error("Password must be at least 6 characters or more"); // Check if password is too short
 
-    // Name validation
-    if (!formData.name) {
-      newErrors.name = "Name is required";
-    }
-
-    // Email validation (simple regex check for valid email format)
-    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
-    if (!formData.email) {
-      newErrors.email = "Email is required";
-    } else if (!emailRegex.test(formData.email)) {
-      newErrors.email = "Please enter a valid email address";
-    }
-
-    // Password validation (at least 6 characters)
-    if (!formData.password) {
-      newErrors.password = "Password is required";
-    } else if (formData.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
-    }
-
-    setErrors(newErrors); // Update the errors state
-    return Object.keys(newErrors).length === 0; // Return true if there are no errors
+    return true; // Return true if all validations pass
   };
 
-  const handleSubmit = (e) => {
+  // Function to handle form submission
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validateForm()) {
-      // Form is valid, proceed with the signup process
-      signup(formData);
+
+    const success = validateForm();
+
+    if (success === true) {
+      try {
+        await signup(formData); // Attempt to create the account
+        toast.success("Account created successfully!");
+        navigate("/"); // Redirect to the home page
+      } catch (error) {
+        toast.error(error.message || "Failed to create account");
+      }
     }
   };
 
   return (
-    <>
-      <div className="min-h-screen grid lg:grid-cols-2">
-        {/****************************************************left side form *************/}
-        <div className="flex flex-col justify-center items-center p-6 sm:p-12 lg:p-24 ">
-          <MessageSquare className="size-9 self-center bg-zinc-700 text-yellow-600 border-l-neutral-800 rounded-md" />
-          <h1 className="from-neutral-200 text-3xl">Create Account</h1>
-          <h1 className="text-yellow-400 text-opacity-80">Get Started with your free Account</h1>
-          <form className="flex flex-col w-full p-6 rounded-lg mt-6" onSubmit={handleSubmit}>
-            <h1 className="m-1 text-indigo-300">Full Name</h1>
-            <input
-              type="text"
-              placeholder="John Doe"
-              className="m-1 input input-bordered input-primary w-full max-w-xs"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            />
-            {errors.name && <p className="text-red-500 text-sm">{errors.name}</p>}
+    <div className="min-h-screen grid lg:grid-cols-2 mt-5">
+      {/* Left side: Form and content */}
+      <div className="flex flex-col justify-center items-center p-6 sm:p-12">
+        <div className="w-full max-w-md space-y-8">
+          {/* Header with logo and title */}
+          <div className="text-center mb-8">
+            <div className="flex flex-col items-center gap-2 group">
+              <div
+                className="size-12 rounded-xl bg-primary/10 flex items-center justify-center 
+              group-hover:bg-primary/20 transition-colors"
+              >
+                <MessageSquare className="size-6 text-primary" />
+              </div>
+              <h1 className="text-2xl font-bold mt-2">Create Account</h1>
+              <p className="text-base-content/60">Get started with your free account</p>
+            </div>
+          </div>
 
-            <h1 className="m-1 text-indigo-300">Email</h1>
-            <input
-              type="text"
-              placeholder="you@example.com"
-              className="input input-bordered input-primary w-full max-w-xs"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            />
-            {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
-
-            <h1 className="m-1 text-indigo-300">Password</h1>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                placeholder="******"
-                className="m-1 input input-bordered input-primary w-full max-w-xs pr-12"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              />
+          {/* Sign-up form */}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* User name */}
+            <div className="form-control">
               
+              <label className="label">
+                <span className="label-text font-medium">Username</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="size-5 text-base-content/40" /> {/* User icon */}
+                </div>
+                <input
+                  type="text"
+                  className={`input input-bordered w-full pl-10`}
+                  placeholder="Username"
+                  value={formData.username}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value })} // Update user name in state
+                />
+              </div>
             </div>
-            {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}
+            {/* Full Name input */}
+            <div className="form-control">
+              
+              <label className="label">
+                <span className="label-text font-medium">Full Name</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="size-5 text-base-content/40" /> {/* User icon */}
+                </div>
+                <input
+                  type="text"
+                  className={`input input-bordered w-full pl-10`}
+                  placeholder="John Doe"
+                  value={formData.fullName}
+                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })} // Update full name in state
+                />
+              </div>
+            </div>
 
-            <button className="btn btn-primary w-full max-w-xs m-1" type="submit">
-              Sign Up
+            {/* Email input */}
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text font-medium">Email</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Mail className="size-5 text-base-content/40" /> {/* Mail icon */}
+                </div>
+                <input
+                  type="email"
+                  className={`input input-bordered w-full pl-10`}
+                  placeholder="you@example.com"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })} // Update email in state
+                />
+              </div>
+            </div>
+
+            {/* Password input */}
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text font-medium">Password</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock className="size-5 text-base-content/40" /> {/* Lock icon */}
+                </div>
+                <input
+                  type={showPassword ? "text" : "password"} // Toggle password visibility
+                  className={`input input-bordered w-full pl-10`}
+                  placeholder="••••••••"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })} // Update password in state
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowPassword(!showPassword)} // Toggle password visibility
+                >
+                  {showPassword ? (
+                    <EyeOff className="size-5 text-base-content/40" /> // Hide password icon
+                  ) : (
+                    <Eye className="size-5 text-base-content/40" /> // Show password icon
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Submit button */}
+            <button type="submit" className="btn btn-primary w-full" disabled={isSigningUp}>
+              {isSigningUp ? (
+                <>
+                  <Loader2 className="size-5 animate-spin" /> {/* Loading spinner */}
+                  Loading...
+                </>
+              ) : (
+                "Create Account" // Button text
+              )}
             </button>
-            <div className="flex">
-              <h1>Already have an account? </h1>{" "}
-              <a href="/login" className="text-indigo-400 underline">
-                Sign In
-              </a>
-            </div>
           </form>
-        </div>
 
-        {/******************************right side ************ */}
-        <div className="flex justify-center items-center"></div>
+          {/* Link to sign in */}
+          <div className="text-center">
+            <p className="text-base-content/60">
+              Already have an account?{" "}
+              <Link to="/login" className="link link-primary">
+                Sign in
+              </Link>
+            </p>
+          </div>
+        </div>
       </div>
-    </>
+
+      {/* Right side: Image and text */}
+      <AuthImagePattern
+        title="Join our community"
+        subtitle="Connect with friends, share moments, and stay in touch with your loved ones."
+      />
+    </div>
   );
 };
-
-export default SignupPage;
+export default SignUpPage;
