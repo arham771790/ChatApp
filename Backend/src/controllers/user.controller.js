@@ -6,6 +6,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import bcrypt from "bcrypt";
 import { uploadonCloudinary } from "../utils/cloudinary.js";
 import transporter from "../utils/nodemailer.js";
+import fs from "fs";
 // Signup Route: Register a new user
 const signupUser = asyncHandler(async (req, res) => {
     const { fullName, email, username, password, profilePic } = req.body;
@@ -125,24 +126,53 @@ const logoutUser = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Logout failed");
     }
 });
-const updateProfile=asyncHandler(async(req,res)=>{
-    try{
-        const {profilePic}=req.body;
+const updateProfile = asyncHandler(async (req, res) => {
+    try {
+        const { profilePic } = req.body;
+        const userId = req.user._id;
 
-        const userId=req.user._id;
-        if(!profilePic)
-        {
-            throw new ApiError(400,"Profile pic is required");
+        if (!profilePic) {
+            throw new ApiError(400, "Profile pic is required");
         }
-        const uploadResponse=await uploadonCloudinary(profilePic);
-        const updatedUser=await User.findByIdAndUpdate(userId,{profilePic:uploadResponse.secure_url},{new:true});
-        res.status(200).json(new ApiResponse(200,updatedUser,"Profile pic updated successfully"));
-    }catch(error){
-        console.log("Error updating profile pic",error.message);
-        throw new ApiError(500,"Error updating profile pic");
-    }    
 
+        let uploadResponse; // Declare uploadResponse here to use it across the function
+
+        if (profilePic.startsWith('data:image')) {
+            const base64Data = profilePic.split(';base64,').pop();
+            const filePath = './temp_image.png'; // Temporary file path
+
+            fs.writeFileSync(filePath, base64Data, { encoding: 'base64' });
+
+            // Upload to Cloudinary
+            uploadResponse = await uploadonCloudinary(filePath);
+
+            fs.unlinkSync(filePath); // Clean up temporary file after upload
+        } else {
+            // Handle non-base64 image data
+            uploadResponse = await uploadonCloudinary(profilePic);
+        }
+
+        // Ensure the Cloudinary upload was successful
+        if (!uploadResponse || !uploadResponse.secure_url) {
+            throw new ApiError(500, "Failed to upload image to Cloudinary");
+        }
+
+        // Update the user profile with the uploaded image URL
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { profilePic: uploadResponse.secure_url },
+            { new: true }
+        );
+
+        res.status(200).json(new ApiResponse(200, updatedUser, "Profile pic updated successfully"));
+    } catch (error) {
+        console.error("Error updating profile pic:", error.message);
+        throw new ApiError(500, "Error updating profile pic");
+    }
 });
+
+  
+  
    
 const checkAuth=asyncHandler(async(req,res)=>{
     try{

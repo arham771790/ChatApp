@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import { Camera, Mail, User } from "lucide-react";
-
+import imageCompression from "browser-image-compression";
 const ProfilePage = () => {
   const { authUser, isUpdatingProfile, updateProfile } = useAuthStore();
   const [selectedImg, setSelectedImg] = useState(null);
@@ -9,17 +9,28 @@ const ProfilePage = () => {
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
-    const reader = new FileReader();
-
-    reader.readAsDataURL(file);
-
-    reader.onload = async () => {
-      const base64Image = reader.result;
-      setSelectedImg(base64Image);
-      await updateProfile({ profilePic: base64Image });
+    const options = {
+      maxSizeMB: 1, // Max file size (in MB)
+      maxWidthOrHeight: 800, // Max dimensions
+      useWebWorker: true, // Use Web Workers for better performance
     };
+    try {
+      // Compress the image
+      const compressedFile = await imageCompression(file, options);
+  
+      const reader = new FileReader();
+      reader.readAsDataURL(compressedFile);
+  
+      reader.onload = async () => {
+        const base64Image = reader.result;
+        setSelectedImg(base64Image);
+        await updateProfile({ profilePic: base64Image });
+      };
+    } catch (error) {
+      console.error("Error compressing image:", error);
+    }
   };
+  
 
   return (
     <div className="h-screen pt-20">

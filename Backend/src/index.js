@@ -12,12 +12,21 @@ app.get("/", (req, res) => {
   res.send("Hello World!");
 }); 
 app.use(cookieParser());// Parse Cookie header and populate req.cookies with an object keyed by the cookie names.
-app.use(express.json());// Parse JSON-encoded bodies 
-app.listen(PORT, () => {
+app.use(express.json({ limit: "10mb" })); // Set limit to 10MB
+app.use(express.urlencoded({ limit: "10mb", extended: true })); // For URL-encoded data 
+app.listen(PORT,'0.0.0.0' ,() => {
   console.log(`Server running at http://localhost:${PORT}`);
   connectDB();
 });
-app.use(cors({
-  origin:'http://localhost:5173',credentials:true}));// Enable CORS with various options 
+// Enable CORS with various options 
+
+
+const corsOptions = {
+  origin: "http://localhost:5173", // Allow your frontend origin
+  credentials: true, // Allow cookies and authentication headers
+};
+
+app.use(cors(corsOptions));
+
 app.use("/api/auth",authRoutes);// Use the auth routes for all routes starting with /api/auth containing signup, login, logout, updateProfile and checkAuth routes
 app.use("/api/message",messageRoutes);// Use the message routes for all routes starting with /api/message containing sendMessage and getMessages routes

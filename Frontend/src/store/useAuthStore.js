@@ -1,86 +1,130 @@
-import { create } from "zustand"; // Importing Zustand to create a store
-import instance from "../Lib/axios"; // Importing the Axios instance for API requests
-import toast from "react-hot-toast"; // Importing toast for showing notifications
+import { create } from "zustand"; 
+import instance from "../Lib/axios"; 
+import toast from "react-hot-toast"; 
 
-// Creating the auth store
+const safeParse = (data, fallback = null) => {
+    try {
+      return JSON.parse(data) || fallback;
+    } catch {
+      return fallback;
+    }
+};
 
 export const useAuthStore = create((set) => ({
     // State variables
-    authUser: null, // To store the authenticated user's details
-    isCheckingAuth: true, // Initially true to show a loading spinner while checking authentication
-    isSigningUp: false, // Initially false to indicate no signup process is happening
-    isLoggingIn: false, // Initially false to indicate no login process is happening
-    isUpdatingProfile: false, // Initially false to indicate no profile update process is happening
+    authUser: safeParse(localStorage.getItem("authUser")),
+    isCheckingAuth: true,
+    isSigningUp: false,
+    isLoggingIn: false,
+    isUpdatingProfile: false,
+    onlineUsers:[],
 
     // Action to check if the user is authenticated
     checkAuth: async () => {
         try {
-            const res = await instance.get("/auth/check"); // API call to check authentication
-            set({ authUser: res.data.user }); // Assuming the response contains a `user` object
+          const accessToken = localStorage.getItem("accessToken");
+          const refreshToken = localStorage.getItem("refreshToken");
+
+          // If tokens are missing, log out
+          if (!accessToken || !refreshToken) {
+            throw new Error("Tokens are missing or invalid");
+          }
+
+          // Check if the access token is still valid
+          const res = await instance.get("/auth/check", {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          // Set authenticated user
+          set({ authUser: res.data.user });
         } catch (error) {
-            console.error("Error in checkAuth:", error.message, error.response); // Log the error for debugging
-            set({ authUser: null }); // If there’s an error, clear the authenticated user
+          console.error("Error in checkAuth:", error.message);
+          
+          // Clear invalid tokens and authUser
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
+          localStorage.removeItem("authUser");
+          
+          set({ authUser: null });
         } finally {
-            set({ isCheckingAuth: false }); // Set `isCheckingAuth` to false after the process
+          set({ isCheckingAuth: false });
         }
     },
 
     // Action to handle user signup
     signup: async (data) => {
-        set({ isSigningUp: true }); // Set `isSigningUp` to true to indicate the signup process is ongoing
+        set({ isSigningUp: true });
         try {
-            const res = await instance.post("auth/signup", data); // API call to signup
-            set({ authUser: res.data }); // Set the authenticated user data after successful signup
-            } catch (error) {
-                console.log(error.message);
-            toast.error(error.response?.data?.message || "Signup failed"); // Show error message from response
+            const res = await instance.post("auth/signup", data);
+            set({ authUser: res.data });
+        } catch (error) {
+            console.log(error.message);
+            toast.error(error.response?.data?.message || "Signup failed");
         } finally {
-            set({ isSigningUp: false }); // Reset `isSigningUp` to false after the process
+            set({ isSigningUp: false });
         }
     },
+
+    // Action to handle user login
     login: async (credentials) => {
-        
+        set({ isLoggingIn: true });
         try {
-          const res = await instance.post('/auth/login', credentials); // API request for login
-    
-          // Set the authenticated user data
-          set({ authUser: res.data });
-    
-          // Show success message
-          toast.success("Logged in successfully");
-        return true;
+            const res = await instance.post('/auth/login', credentials);
+            const { user, accessToken, refreshToken } = res.data.data;
+          
+            // Save tokens and user data
+            localStorage.setItem("accessToken", accessToken);
+            localStorage.setItem("refreshToken", refreshToken);
+            localStorage.setItem("authUser", JSON.stringify(user));
+
+            set({ authUser: user });
+            toast.success("Logged in successfully");
+            return true;
         } catch (error) {
-          console.error("Error in login:", error.response);
-          toast.error("Failed to login");
-        }finally{
-            set({ isLoggingIn: false }); // Reset `isLoggingIn` to false after the process
+            console.error("Error in login:", error.response);
+            toast.error("Failed to login");
+        } finally {
+            set({ isLoggingIn: false });
         }
-      },
-    
+    },
+
     // Action to handle user logout
     logout: async () => {
         try {
-            await instance.post('/auth/logout'); // API call to logout
-            set({ authUser: null }); // Clear the authenticated user data
-            toast.success("Logged out successfully"); // Show success message
-            
+          await instance.post("/auth/logout");
         } catch (error) {
-            console.error("Error in logout:", error.message, error.response); // Log the error for debugging
-            toast.error("Some error occurred while logging out"); // Show error message
+          console.error("Error in logout:", error.message);
+          toast.error("Some error occurred while logging out");
+        } finally {
+          // Clear all tokens and state
+          localStorage.clear();
+          set({ authUser: null });
+          toast.success("Logged out successfully");
         }
     },
+
     // Action to handle user profile update
-    updateProfile: async (data) => {
-        set({ isUpdatingProfile: true });
-        try {
+     updateProfile : async (data) => {
+      set({ isUpdatingProfile: true });
+      try {
           const res = await instance.put("/auth/updateProfile", data);
-          set({ authUser: res.data });
+          console.log("Backend response:", res.data); // Log the response from backend
+          const user = res.data.data; // Assuming the response contains `data`
+          
+          // Sync updated user in localStorage and store
+          localStorage.setItem("authUser", JSON.stringify(user));
+          set({ authUser: user });
+  
           toast.success("Profile updated successfully");
-        } catch (error) {
-          console.log("error in update profile:", error);
-          toast.error(error.response.data.message);
-        } finally {
+      } catch (error) {
+          console.error("Error updating profile:", error);
+          toast.error(error.response?.data?.message || "Failed to update profile");
+      } finally {
           set({ isUpdatingProfile: false });
-        }
-      },
+      }
+  },
+  
 }));
