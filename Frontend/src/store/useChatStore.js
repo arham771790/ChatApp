@@ -41,15 +41,31 @@ export const useChatStore = create((set,get) => ({
   getMessages: async (userId) => {
     set({ isMessagesLoading: true });
     try {
-      const res = await instance.get(`/message/${userId}`);
-      set({ messages: res.data.messages || [] }); // ✅ Fallback to empty array if undefined
+        const res = await instance.get(`/message/${userId}`);
+        console.log("Full Response:", res);
+        console.log("Response Data:", res.data);
+
+        // ✅ Fix: Directly assign res.data if it's an array
+        if (Array.isArray(res.data)) {
+            set({ messages: [...res.data] }); // Ensure a new array reference
+        } else {
+            console.warn("⚠️ Unexpected response structure!", res.data);
+            set({ messages: [] });
+        }
+
+        // ✅ Check if Zustand updates correctly
+        setTimeout(() => {
+            console.log("Updated messages state in Zustand:", get().messages);
+        }, 500);
     } catch (error) {
-      console.error("Error in getMessages", error);
-      set({ messages: [] }); // ✅ Prevents undefined state
+        console.error("Error in getMessages", error);
+        set({ messages: [] });
     } finally {
-      set({ isMessagesLoading: false });
+        set({ isMessagesLoading: false });
     }
-  },
+},
+
+
 
   /**
    * Sets the selected user in the chat interface.
@@ -62,11 +78,17 @@ export const useChatStore = create((set,get) => ({
     const { selectedUser, messages } = get();
     try {
       const res = await instance.post(`/message/send/${selectedUser._id}`, messageData);
-      set({ messages: [...messages, res.data] });
+      
+      // Check the response and only add the message, not the whole response object
+      const newMessage = res.data.message || res.data; // If res.data.message is available, use it
+      
+      set({ messages: [...messages, newMessage] });
     } catch (error) {
-      toast.error(error.response.data.message,error);
+      toast.error(error.response?.data?.message || error);
     }
-  },  
+  },
+  
+    
   //optimize later
   seeMessages:()=>{
     const {selectedUser}=get();

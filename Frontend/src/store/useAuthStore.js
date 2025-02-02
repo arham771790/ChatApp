@@ -59,7 +59,7 @@ export const useAuthStore = create((set, get) => ({
         localStorage.setItem("authUser", JSON.stringify(user)); // Store refreshed user data
         get().connectSocket();
       } catch (refreshError) {
-        toast.error(refreshError);
+        toast.error(refreshError.message);
         console.error("Error refreshing token:", refreshError.message);
         set({ authUser: null });
         localStorage.removeItem("authUser");
