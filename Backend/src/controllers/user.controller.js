@@ -184,4 +184,41 @@ const checkAuth=asyncHandler(async(req,res)=>{
         throw new ApiError(500,"Error checking authentication");
     }
 });
-export { signupUser, loginUser, logoutUser ,updateProfile,checkAuth};
+
+const refreshAuthToken = asyncHandler(async (req, res) => {
+    const { refreshToken } = req.cookies;
+
+    if (!refreshToken) {
+        throw new ApiError(401, "Refresh token is required");
+    }
+
+    try {
+        // Verify the refresh token
+        const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+        const user = await User.findById(decoded.userId).select("-password -refreshToken");
+
+        if (!user) {
+            throw new ApiError(401, "User not found");
+        }
+
+        // Generate new tokens
+        const { accessToken, refreshToken: newRefreshToken } = await generateAccessAndRefreshToken(user._id);
+
+        // Set new tokens in cookies
+        const cookieOptions = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+        };
+
+        return res
+            .cookie("accessToken", accessToken, cookieOptions)
+            .cookie("refreshToken", newRefreshToken, cookieOptions)
+            .json(new ApiResponse(200, { accessToken, refreshToken: newRefreshToken }, "Access token refreshed successfully"));
+
+    } catch (error) {
+        throw new ApiError(403, "Invalid or expired refresh token");
+    }
+});
+
+export { signupUser, loginUser, logoutUser ,updateProfile,checkAuth,refreshAuthToken};

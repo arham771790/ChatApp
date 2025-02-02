@@ -1,9 +1,10 @@
 import { create } from "zustand";
 import toast from "react-hot-toast";
 import instance from "../Lib/axios";
+import { useAuthStore } from "./useAuthStore";
 
 // Zustand store for managing chat-related state and operations
-export const useChatStore = create((set) => ({
+export const useChatStore = create((set,get) => ({
   // State variables
   messages: [], // Array to store the messages for the selected user
   users: [], // Array to store all available users
@@ -38,18 +39,15 @@ export const useChatStore = create((set) => ({
    * @param {string} userId - The ID of the user whose messages should be fetched.
    */
   getMessages: async (userId) => {
-    set({ isMessagesLoading: true }); // Set loading state to true
+    set({ isMessagesLoading: true });
     try {
-      const res = await instance.get(`/messages/${userId}`); // Fetch messages for the user
-      set({
-        messages: res.data.messages, // Update state with messages
-        isMessagesLoading: false, // Reset loading state
-        selectedUser: userId, // Set the selected user
-      });
+      const res = await instance.get(`/message/${userId}`);
+      set({ messages: res.data.messages || [] }); // ✅ Fallback to empty array if undefined
     } catch (error) {
-      console.log("Error in getMessages", error); // Log error for debugging
-      toast.error("Failed to load messages"); // Display error notification
-      set({ isMessagesLoading: false }); // Reset loading state
+      console.error("Error in getMessages", error);
+      set({ messages: [] }); // ✅ Prevents undefined state
+    } finally {
+      set({ isMessagesLoading: false });
     }
   },
 
@@ -59,5 +57,29 @@ export const useChatStore = create((set) => ({
    * 
    * @param {object} selectedUser - The user object to set as the selected user.
    */
-  setSelectedUser: async (selectedUser) => set({ selectedUser }), // Update the selected user state
+  setSelectedUser:  (selectedUser) => set({ selectedUser }), // Update the selected user state
+  sendMessage: async (messageData) => {
+    const { selectedUser, messages } = get();
+    try {
+      const res = await instance.post(`/message/send/${selectedUser._id}`, messageData);
+      set({ messages: [...messages, res.data] });
+    } catch (error) {
+      toast.error(error.response.data.message,error);
+    }
+  },  
+  //optimize later
+  seeMessages:()=>{
+    const {selectedUser}=get();
+    if(!selectedUser) return;
+    const socket=useAuthStore.getState().socket;
+    socket.on("newMessage",(newMessage)=>{
+      set({
+        messages:[...get().messages,newMessage],}) //add new messages with existing messages
+
+    })
+  },
+  unSeeMessages:()=>{
+    const socket=useAuthStore.getState().socket;
+    socket.off("newMessage");
+  },
 }));

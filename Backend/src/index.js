@@ -5,8 +5,9 @@ import authRoutes from "./routes/auth.routes.js";
 import messageRoutes from "./routes/message.routes.js"
 import connectDB from "./utils/db.js";
 import cors from "cors";
+import { app,server } from "./utils/socket.js";
 dotenv.config();
-const app = express();
+
 const PORT=process.env.PORT;
 app.get("/", (req, res) => {
   res.send("Hello World!");
@@ -14,7 +15,7 @@ app.get("/", (req, res) => {
 app.use(cookieParser());// Parse Cookie header and populate req.cookies with an object keyed by the cookie names.
 app.use(express.json({ limit: "10mb" })); // Set limit to 10MB
 app.use(express.urlencoded({ limit: "10mb", extended: true })); // For URL-encoded data 
-app.listen(PORT,'0.0.0.0' ,() => {
+server.listen(PORT,'0.0.0.0' ,() => {
   console.log(`Server running at http://localhost:${PORT}`);
   connectDB();
 });
