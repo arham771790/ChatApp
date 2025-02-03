@@ -18,7 +18,7 @@ const App = () => {
     checkAuth();
   }, [checkAuth]);
 
-  console.log({ authUser }); // Log the authUser state variable to the console
+   // Log the authUser state variable to the console
 
   // If we're checking auth, or the user is not authenticated, show a loading spinner
   if (isCheckingAuth) {

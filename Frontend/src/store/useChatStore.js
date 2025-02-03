@@ -42,9 +42,7 @@ export const useChatStore = create((set,get) => ({
     set({ isMessagesLoading: true });
     try {
         const res = await instance.get(`/message/${userId}`);
-        console.log("Full Response:", res);
-        console.log("Response Data:", res.data);
-
+       
         // ✅ Fix: Directly assign res.data if it's an array
         if (Array.isArray(res.data)) {
             set({ messages: [...res.data] }); // Ensure a new array reference
@@ -53,11 +51,7 @@ export const useChatStore = create((set,get) => ({
             set({ messages: [] });
         }
 
-        // ✅ Check if Zustand updates correctly
-        setTimeout(() => {
-            console.log("Updated messages state in Zustand:", get().messages);
-        }, 500);
-    } catch (error) {
+            } catch (error) {
         console.error("Error in getMessages", error);
         set({ messages: [] });
     } finally {

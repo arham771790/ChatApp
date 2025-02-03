@@ -1,7 +1,7 @@
 import { useChatStore } from "../store/useChatStore";
 import { useEffect, useRef } from "react";
-import ChatHeader from "../Components/ChatHeader";
-import MessageInput from "../Components/MessageInput";
+import ChatHeader from "../Components/ChatHeader.jsx";
+import MessageInput from "../Components/MessageInput.jsx";
 import MessageSkeleton from "../Components/skeleton/MessageSkeleton.jsx";
 import { useAuthStore } from "../store/useAuthStore.js";
 import { formatMessageTime } from "../Lib/formatMessageTime.js";
@@ -32,7 +32,7 @@ const ChatContainer = () => {
     if (messages.length > 0 && messageEndRef.current) {
       messageEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-    console.log("Messages:", messages);
+    
   }, [messages]);
 
   if (isMessagesLoading) {
