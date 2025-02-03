@@ -3,7 +3,7 @@ import { useAuthStore } from "../store/useAuthStore"; // Importing custom hook t
 import { Eye, EyeOff, Loader2, Lock, Mail, MessageSquare, User } from "lucide-react"; // Importing icons for UI
 import { Link } from "react-router-dom"; // Importing Link component for navigation
 import { useNavigate } from "react-router-dom";
-import AuthImagePattern from "../components/AuthImagePattern"; // Importing a custom component for the image and text pattern on the right side
+import AuthImagePattern from "../components/AuthImagePattern.jsx"; // Importing a custom component for the image and text pattern on the right side
 import toast from "react-hot-toast"; // Importing a library for showing toast notifications
 
 const SignUpPage = () => {
