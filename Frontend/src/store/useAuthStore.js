@@ -5,7 +5,7 @@ import toast from "react-hot-toast"; // Toast notifications for user feedback
 import { io } from "socket.io-client"; // Socket.IO client for real-time communication
 
 // Define the base URL depending on the environment (development or production)
-const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:5000" : "/";
+const BASE_URL = "https://chatapp-raff.onrender.com";
 
 // Safe JSON parsing utility to handle invalid or missing data gracefully
 const safeParse = (data, fallback = null) => {
