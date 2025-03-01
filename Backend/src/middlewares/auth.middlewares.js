@@ -2,30 +2,32 @@ import jwt from "jsonwebtoken";
 import { User } from "../models/user.model.js";
 
 export const protectRoute = async (req, res, next) => {
-    try{
-        const token=req.cookies.accessToken;
-        if(!token)
-        {
-            return res.status(401).json({message:"Unauthorized- No token provided"});
+    try {
+        let token = req.cookies.accessToken || req.headers.authorization?.split(" ")[1];
+
+        if (!token) {
+            return res.status(401).json({ message: "Unauthorized - No token provided" });
         }
-        const decoded=jwt.verify(token,process.env.ACCESS_TOKEN_SECRET);
-        console.log("Decoded token",decoded);
-        if(!decoded)
-        {
-            return res.status(401).json({message:"Unauthorized - Invalid token"}); 
+
+        try {
+            const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+            console.log("Decoded token:", decoded);
+
+            const user = await User.findById(decoded.userId).select("-password");
+            if (!user) {
+                return res.status(403).json({ message: "Forbidden - User not found" });
+            }
+
+            req.user = user;
+            next();
+        } catch (error) {
+            if (error.name === "TokenExpiredError") {
+                return res.status(401).json({ message: "Unauthorized - Token expired" });
+            }
+            return res.status(401).json({ message: "Unauthorized - Invalid token" });
         }
-        const user= await User.findById(decoded.userId).select("-password");// exclude password from the response
-        if(!user)
-        {
-            return res.status(401).json({message:"User not found"});
-        }
-        req.user=user;
-        next();
+    } catch (error) {
+        console.error("Error verifying token in protectRoute middleware:", error.message);
+        return res.status(500).json({ message: "Internal Server Error" });
     }
-        catch(error)
-        {
-            console.log("Error verifying token in protectRoute middleware",error.message);
-            return res.status(500).json({message:"Internal Server Error"});
-            
-        }
-    };
+};
