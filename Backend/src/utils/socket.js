@@ -12,7 +12,7 @@ const server = http.createServer(app);
 // Initialize a new Socket.IO server instance, attach it to the HTTP server
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:5173"], // Allow connections only from this origin
+    origin: ["https://chat-app-coral-phi.vercel.app"], // Allow connections only from this origin
   },
 });
 
